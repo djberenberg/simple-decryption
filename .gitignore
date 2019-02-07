@@ -1,0 +1,5 @@
+*.swp
+*.swo
+corpus-en.txt
+ngrams/
+__pycache__
