@@ -21,7 +21,6 @@ import sys, os
 import argparse
 import decipher_utils as du
 
-CLEAR = " " * 80
 
 #### command line "types" ####
 def exists(pth):
@@ -86,7 +85,7 @@ def define_args():
                         dest="ngram",
                         type=intgt0,
                         help="size of ngrams to derive the fitness function of the genetic algorithm",
-                        default=2)
+                        default=4)
 
     parser.add_argument("--training-corpus","-t",
                         dest="training_corpus",
@@ -98,7 +97,7 @@ def define_args():
                         dest="n_iters",
                         type=intgt0,
                         help="number of iterations to run for the cipher to decrypt",
-                        default=1000)
+                        default=5000)
 
     parser.add_argument("--cipher-file","-c",
                         dest="cipher_file",
@@ -118,6 +117,12 @@ def define_args():
                         help="directory path to look for/store precomputed ngram log probabilities",
                         default="ngrams")
 
+    parser.add_argument("--verbose","-v",
+                        dest="verbose",
+                        help="Display verbose outputs",
+                        action="store_true",
+                        default=False)
+
     return parser
 
 def prepare_solver(cmdline_args):
@@ -133,11 +138,13 @@ def prepare_solver(cmdline_args):
     ngram_file = os.path.join(cmdline_args.ngram_dir, f"{cmdline_args.ngram}-grams.bin")
     
     # get the log probabilties of ngrams in the training corpus
-    print(f"\r{CLEAR}\r[+] Preparing training corpus", end="", file=sys.stderr)
+    if cmdline_args.verbose:
+        print(f"\r{du.CLEAR}\r[+] Preparing training corpus", end="", file=sys.stderr)
     cleaned = du.clean(cmdline_args.training_corpus)
+        
     prbs, total_ngrams = du.ngram_distribution(ngram_file, cleaned, n=cmdline_args.ngram, log=True)
-
-    print(f"\r{CLEAR}\r[+] Training corpus prepared", file=sys.stderr)
+    if cmdline_args.verbose:
+        print(f"\r{du.CLEAR}\r[+] Extracted {cmdline_args.ngram}-grams from {ngram_file}", file=sys.stderr)
 
     return du.Solver(prbs, total_ngrams, cmdline_args.ngram)
     
@@ -147,12 +154,14 @@ def main():
     test_corpus = du.clean(args.encrypted)
     solver = prepare_solver(args)
 
-    top_key, top_fitness = solver.solve(test_corpus, args.n_iters)
-    #print(du.SubstitutionCipher(top_key).decrypt(test_corpus))
-
-    with open(args.encrypted, "rt") as f:
-        for line in f.readlines():
-            print(du.SubstitutionCipher(top_key).decrypt(line.lower()))
+    top_key, top_fitness = solver.solve(test_corpus, args.n_iters, verbose=args.verbose)
+    if args.verbose:
+        print(f"\r{du.CLEAR}\r")
+    with open(args.encrypted, "rt") as infile, open(args.decryption_file, "wt") as outfile:
+        for line in filter(lambda l: l != "\n", infile.readlines()):
+            decoded = du.export_decrypted_text(top_key, line)
+            print(decoded, file=outfile)
+            #decoded = du.SubstitutionCipher(top_key).decrypt(line.lower())
 
 if __name__ == "__main__":
     main()

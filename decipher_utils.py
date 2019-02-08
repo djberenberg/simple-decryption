@@ -14,6 +14,8 @@ from collections import Counter
 
 #__all__ = ["prepare_training_corpus","SubstitutionCipher","fitness"]
 
+CLEAR = " " * 80
+
 #### helper functions ####
 def cache_pickle(handler):
     """
@@ -156,7 +158,7 @@ def mutate(parent):
     
     return "".join(child)
 
-class Solver:
+class Solver(object):
     """
     algorithm for iterating on the cipher
     """
@@ -192,7 +194,7 @@ class Solver:
             total += p
         return total
 
-    def solve(self, ciphertext, n_iters):
+    def solve(self, ciphertext, n_iters, verbose=False):
         
         top_key = list(string.ascii_lowercase) 
         random.shuffle(top_key)
@@ -206,45 +208,30 @@ class Solver:
             decrypted =  SubstitutionCipher(child).decrypt(ciphertext)
             child_fitness = self.score(decrypted)
             if child_fitness > top_fitness:
-                print(f"iter: {i} fitness: {child_fitness}, key: {child}")
+                if verbose:
+                    print(f"\r{CLEAR}\r[{i:5d}], fitness: {child_fitness}", end="")
                 parent = child
                 top_key = parent
                 top_fitness = child_fitness
         
+        if verbose:
+            print(f"\r{CLEAR}\r[+] Final fitness: {child_fitness}")
         return top_key, top_fitness
-#def fitness(string, logprobs):
-#    """
-#    Compute the fitness of a string according the log probabilities of n-grams
-#    args:
-#        :string   (str)  - the string in question
-#        :logprobs (dict) - mapping from ngrams to their log probabilities
-#    returns:
-#        :(float) - the log probability of the string 
-#    raises:
-#        :TypeError if either string is not a str or logprobs is not a dict
-#    """
-#    if not (isinstance(string, str) and isinstance(logprobs, dict)):
-#        raise TypeError("Expected `string` to be str, `logprobs` to be dict")
-#
-#    n = len(next(iter(logprobs))) # the size of each ngram
-#    total = 0
-#    
-#    ngram_counts = Counter(chunks(string, n))
-#    N = sum(ngram_counts.values())
-#
-#    ciphertext_ngram_dist = {gram:count/N for gram, count in ngram_counts.items()}
-#    for chunk in chunks(string, n):
-#        try:
-#            p = logprobs[chunk] + ciphertext_ngram_dist[chunk]
-#        except KeyError:
-#            p = log2(1e-10)
-#            # if this chunk did not occur in the training corpus we can assume it has a very
-#            # low probabilty. Make it way lower than the lowest value
-#            #logprobs[chunk] = m
-#
-#        total += p
-#
-#    return total 
+
+def export_decrypted_text(key, text):
+    final_str = ""
+    cipher = SubstitutionCipher(key)
+    for ch in text:
+        dec = cipher.decrypt(ch.lower())
+        if ch.isalpha():
+            if ch.isupper():
+                final_str += dec.upper() 
+            else:
+                final_str += dec
+        else:
+            final_str += ch
+
+    return final_str
 
 #### cipher object ####
 class SubstitutionCipher(object):
@@ -272,7 +259,7 @@ class SubstitutionCipher(object):
         assert all(lambda s:isinstance(s, str) for s in [key, alphabet]), "Either key or alphabet is not a string"
 
         self._k, self._alph = map(list, [key, alphabet])
-
+        
         self.k2a = dict(zip(self._k, self._alph)) # key      --> alphabet 
         self.a2k = dict(zip(self._alph, self._k)) # alphabet --> key
 
