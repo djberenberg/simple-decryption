@@ -15,11 +15,59 @@ This script will output two files:
     (2) The original texts decrypted based on (1), defaulted to ./decrypted.txt 
 """
 import re
+import string
+import random
 import sys, os
 import argparse
 import decipher_utils as du
 
 CLEAR = " " * 80
+
+#### command line "types" ####
+def exists(pth):
+    """
+    asserts a path to a filename exists
+    args:
+        :pth (str) - the path to verify
+    returns:
+        :the filename
+    raises:
+        :FileNotFoundError if the path does not exist
+    """
+    pth = str(pth)
+    if not os.path.exists(pth):
+        raise FileNotFoundError(f"{pth} does not found")
+    return pth
+
+def direxists(pth):
+    """
+    verifies the existence of or creates a directory at `pth`
+    args:
+        :pth - path in question
+    returns:
+        :the path to the created/verified directory
+    """
+    pth = str(pth)
+    os.makedirs(pth, exist_ok=True)
+    return pth
+
+def intgt0(x):
+    """
+    asserts the input is an integer > 0
+    args:
+        :x - the data to verify
+    returns:
+        :the verified data
+    raises:
+        :TypeError if the provided input cannot be cast to integer
+    """
+
+    x = int(x)
+    if x <= 0:
+        raise TypeError(f"Expected int > 0; got {x}")
+    return x
+
+
 
 def define_args():
     """
@@ -31,24 +79,24 @@ def define_args():
     parser = argparse.ArgumentParser(description="Decrypt substitution-ciphered text")
 
     parser.add_argument("encrypted",
-                        type=du.exists,
+                        type=exists,
                         help="path to the file containing the ciphertext")
 
     parser.add_argument("--ngram-size","-g",
                         dest="ngram",
-                        type=du.intgt0,
+                        type=intgt0,
                         help="size of ngrams to derive the fitness function of the genetic algorithm",
-                        default=4)
+                        default=2)
 
     parser.add_argument("--training-corpus","-t",
-                        dest="corpus",
-                        type=du.exists,
+                        dest="training_corpus",
+                        type=exists,
                         help="path to the training corpus of English texts",
                         default="corpus-en.txt")
 
     parser.add_argument("--iters","-n",
                         dest="n_iters",
-                        type=du.intgt0,
+                        type=intgt0,
                         help="number of iterations to run for the cipher to decrypt",
                         default=1000)
 
@@ -66,53 +114,45 @@ def define_args():
 
     parser.add_argument("--ngram-location","-l",
                         dest="ngram_dir",
-                        type=du.direxists,
+                        type=direxists,
                         help="directory path to look for/store precomputed ngram log probabilities",
                         default="ngrams")
 
     return parser
 
-def logprobs(cmdline_args):
+def prepare_solver(cmdline_args):
     """
     Get the log probabilities of the specified ngram lengths
+
     args:
         :cmdline_args (argparse.Namespace) - the commandline arguments
-
     returns:
-        :(dict) - mapping from ngrams found in the corpus file to their log probabilities
+        :(du.Solver) - Solver object containing the storing the data computed
     """
     # build the path to the ngram file that will be used
     ngram_file = os.path.join(cmdline_args.ngram_dir, f"{cmdline_args.ngram}-grams.bin")
     
     # get the log probabilties of ngrams in the training corpus
     print(f"\r{CLEAR}\r[+] Preparing training corpus", end="", file=sys.stderr)
-    ngram_probs = du.prepare_training_corpus(ngram_file, cmdline_args.corpus, ngram=cmdline_args.ngram) 
+    cleaned = du.clean(cmdline_args.training_corpus)
+    prbs, total_ngrams = du.ngram_distribution(ngram_file, cleaned, n=cmdline_args.ngram, log=True)
+
     print(f"\r{CLEAR}\r[+] Training corpus prepared", file=sys.stderr)
-    return ngram_probs
-    # build the path to the ngram file that will be used
-    ngram_file = os.path.join(cmdline_args.ngram_dir, f"{cmdline_args.ngram}-grams.bin")
+
+    return du.Solver(prbs, total_ngrams, cmdline_args.ngram)
     
-    # get the log probabilties of ngrams in the training corpus
-    print(f"\r{CLEAR}\r[+] Preparing training corpus", end="")
-    ngram_probs = du.prepare_training_corpus(ngram_file, cmdline_args.corpus, ngram=cmdline_args.ngram) 
-    print(f"\r{CLEAR}\r[+] Training corpus prepared")
 
 def main():
     args = define_args().parse_args()
-    ngram_probs = logprobs(args)
-    # we will assume each line of the ciphertext file is its own message
-    # unless it is a newline character
+    test_corpus = du.clean(args.encrypted)
+    solver = prepare_solver(args)
 
-    # next step is to prepare the testing corpus  
-    # this is done the same way as the training corpus: 
-    #   - remove all punctuation and spacing
-    #   - concatenate together the message
-    with open(args.encrypted, "rt") as enc:
-        # this implementation assumes the encrypted text file is fairly small
-        # and can be loaded totally into memory; 
-        lines = list(filter(lambda L: L != "\n", enc.readlines()))
-        # obtain the test corpus by removing punctuation all non alphabetical chars
-        test_corpus = re.sub("[^a-zA-Z]","","".join(lines)).lower()
+    top_key, top_fitness = solver.solve(test_corpus, args.n_iters)
+    #print(du.SubstitutionCipher(top_key).decrypt(test_corpus))
+
+    with open(args.encrypted, "rt") as f:
+        for line in f.readlines():
+            print(du.SubstitutionCipher(top_key).decrypt(line.lower()))
 
 if __name__ == "__main__":
     main()
