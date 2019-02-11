@@ -12,8 +12,6 @@ import sys, os
 from math import log2
 from collections import Counter
 
-#__all__ = ["prepare_training_corpus","SubstitutionCipher","fitness"]
-
 CLEAR = " " * 80
 
 #### helper functions ####
@@ -129,7 +127,6 @@ def ngram_distribution(text,n=1, log=True):
     ngram_counts = Counter(chunks(text,n))
 
     N = sum(ngram_counts.values())
-
     if log:
         return {gram:log2(count/N)for gram, count in ngram_counts.items()}, N
     else:
@@ -152,11 +149,30 @@ def clean(filename, filt="[^A-Za-z]"):
     return text
 
 def mutate(parent):
+    """
+    mutate a parent by swapping two separate characters in its key
+    args:
+        :parent (str) - cipher key
+    returns:
+        :(str) - the mutated parent, a child
+    """
     child = list(parent)
-    swp1, swp2 = random.randint(0, 25), random.randint(0, 25)      
+    swp1 = swp2 = 0
+    while swp1 == swp2:
+        swp1, swp2 = random.randint(0, 25), random.randint(0, 25)      
     child[swp1], child[swp2] = child[swp2], child[swp1]
     
     return "".join(child)
+
+def generate_parent():
+    """
+    helper function to wrap the parent generation routine
+    returns:
+        :(str) - a parent cipher key
+    """
+    key = list(string.ascii_lowercase)
+    random.shuffle(key)
+    return "".join(key)
 
 class Solver(object):
     """
@@ -187,23 +203,33 @@ class Solver(object):
                 p = self.ngram_dist[chunk]
             except KeyError:
                 # this chunk did not occur in the training corpus,
-                # add it for future use
+                # add it for future use with a low probability
                 self.ngram_dist[chunk] = log2(0.0001/self.N)
                 p = self.ngram_dist[chunk]
             
             total += p
         return total
 
-    def solve(self, ciphertext, n_iters, verbose=False):
-        
-        top_key = list(string.ascii_lowercase) 
-        random.shuffle(top_key)
-        top_key = "".join(top_key)
+    def solve(self, ciphertext, n_iters, verbose=False, seed_parent=None):
+        """
+        perform the hill climber algorithm on cipher text for some number of iterations
+        args:
+            :ciphertext (str) - the encrypted text
+            :n_iters (int) - number of iterations to run
+        returns:
+            :(str) - the final decryption key found
+            :(float) - the final fitness of that key
+        """
+        if seed_parent is None:
+            top_key = generate_parent() 
+        else:
+            top_key = seed_parent
         top_fitness = self.score(ciphertext)
         parent = top_key
         
         # hill climbing algorithm
-        for i in range(n_iters):
+        time_stagnant = i = 0
+        while i < n_iters:
             child = mutate(parent)
             decrypted =  SubstitutionCipher(child).decrypt(ciphertext)
             child_fitness = self.score(decrypted)
@@ -213,9 +239,13 @@ class Solver(object):
                 parent = child
                 top_key = parent
                 top_fitness = child_fitness
-        
+            else:
+                time_stagnant += 1
+
+            i += 1 
+
         if verbose:
-            print(f"\r{CLEAR}\r[+] Final fitness: {child_fitness}")
+            print(f"\r{CLEAR}\r[>] Final cipher fitness: {top_fitness}")
         return top_key, top_fitness
 
 def export_decrypted_text(key, text):
@@ -231,6 +261,13 @@ def export_decrypted_text(key, text):
         else:
             final_str += ch
 
+    return final_str
+
+def export_cipher(key):
+    final_str = ""
+    cipher = SubstitutionCipher(key)
+    for ch in sorted(cipher.key):
+        final_str += f"{ch} -> {cipher.k2a[ch]}\n"
     return final_str
 
 #### cipher object ####

@@ -5,8 +5,17 @@
 """
 User facing command line application for deciphering the English simple substitution cipher
 
-This application uses a genetic algorithm to determine the most likely cipher key
+This application uses the hill climber algorithm to determine the most likely cipher key
 for the provided messages. 
+
+One addition to the genetic approach is to verify the decrypted texts against the provided
+English texts. This is done by extracting unique tokens from the English texts and verifying
+that at least 95% of the decrypted vocabulary is found in the English vocabulary. 
+
+The main source information for developing this application is found in:
+
+    "Solving Substitution Ciphers" by Sam Hasinoff
+    [https://people.csail.mit.edu/hasinoff/pubs/hasinoff-quipster-2003.pdf]
 
 This script will output two files:
     (1) The decryption cipher (./cipher.txt by default) in the form of
@@ -19,9 +28,10 @@ import string
 import random
 import sys, os
 import argparse
-import decipher_utils as du
+import datetime
+import simple_decryption as sd
 
-
+CLEAR = " " * 80
 #### command line "types" ####
 def exists(pth):
     """
@@ -35,7 +45,7 @@ def exists(pth):
     """
     pth = str(pth)
     if not os.path.exists(pth):
-        raise FileNotFoundError(f"{pth} does not found")
+        raise FileNotFoundError(f"{pth} was not found")
     return pth
 
 def direxists(pth):
@@ -66,8 +76,6 @@ def intgt0(x):
         raise TypeError(f"Expected int > 0; got {x}")
     return x
 
-
-
 def define_args():
     """
     Lays out the passable arguments to the application
@@ -81,23 +89,9 @@ def define_args():
                         type=exists,
                         help="path to the file containing the ciphertext")
 
-    parser.add_argument("--ngram-size","-g",
-                        dest="ngram",
-                        type=intgt0,
-                        help="size of ngrams to derive the fitness function of the genetic algorithm",
-                        default=4)
-
-    parser.add_argument("--training-corpus","-t",
-                        dest="training_corpus",
+    parser.add_argument("training_corpus",
                         type=exists,
-                        help="path to the training corpus of English texts",
-                        default="corpus-en.txt")
-
-    parser.add_argument("--iters","-n",
-                        dest="n_iters",
-                        type=intgt0,
-                        help="number of iterations to run for the cipher to decrypt",
-                        default=5000)
+                        help="path to the training corpus of English texts")
 
     parser.add_argument("--cipher-file","-c",
                         dest="cipher_file",
@@ -132,36 +126,90 @@ def prepare_solver(cmdline_args):
     args:
         :cmdline_args (argparse.Namespace) - the commandline arguments
     returns:
-        :(du.Solver) - Solver object containing the storing the data computed
+        :(sd.solve.SubstitutionSolver) - Solver object storing the data computed
+        :(set of str) - the vocabulary of the training corpus 
     """
     # build the path to the ngram file that will be used
     ngram_file = os.path.join(cmdline_args.ngram_dir, f"{cmdline_args.ngram}-grams.bin")
     
     # get the log probabilties of ngrams in the training corpus
     if cmdline_args.verbose:
-        print(f"\r{du.CLEAR}\r[+] Preparing training corpus", end="", file=sys.stderr)
-    cleaned = du.clean(cmdline_args.training_corpus)
+        print(f"\r{CLEAR}\r[+] Building {cmdline_args.ngram}-gram language model", end="")
+    cleaned, vocab = sd.utils.clean(cmdline_args.training_corpus,return_vocab=True)
         
-    prbs, total_ngrams = du.ngram_distribution(ngram_file, cleaned, n=cmdline_args.ngram, log=True)
+    prbs, total_ngrams = sd.utils.ngram_distribution(ngram_file, cleaned, n=cmdline_args.ngram, log=True)
     if cmdline_args.verbose:
-        print(f"\r{du.CLEAR}\r[+] Extracted {cmdline_args.ngram}-grams from {ngram_file}", file=sys.stderr)
+        print(f"\r{CLEAR}\r[+] Extracted {cmdline_args.ngram}-grams from {cmdline_args.training_corpus}")
 
-    return du.Solver(prbs, total_ngrams, cmdline_args.ngram)
+    return sd.solve.SubstitutionSolver(prbs, total_ngrams, cmdline_args.ngram), vocab
     
+def export_data(cmdline_args, cipher):
+    """
+    helper function to write final results to disk
+    args:
+        :cmdline_args (argparse.Namespace) - the original cmdline args
+        :cipher (str) - the final cipher
+    """
+    with open(cmdline_args.encrypted, "rt") as infile, open(cmdline_args.decryption_file, "wt") as outfile:
+        for line in filter(lambda l: l != "\n", infile.readlines()):
+            sd.core.export_decrypted_text(cipher, line, file=outfile)
+
+    with open(cmdline_args.cipher_file, "wt") as cf:
+        sd.core.export_cipher(cipher, file=cf)
+
+def mean(L):
+    """
+    return the mean of a list
+    """
+    return sum(L)/len(L)
+
+def proportion_english_text(english_vocab, test_vocab, cipher):
+    """
+    return the proportion of the `test_vocab` that is found in
+    `english_vocab`
+
+    args:
+        :english_vocab, test_vocab (set of str) - the texts to verify
+        :cipher (sd.core.SubstitutionCipher) - the cipher to decrypt the test text
+    returns:
+        :(float) - a value in [0, 1] that signifies the proportion of english text found in the test text
+    """
+
+    decrypted_texts = set(cipher.decrypt(w) for w in test_vocab)
+    return mean([1 if w in english_vocab else 0 for w in decrypted_texts])
 
 def main():
-    args = define_args().parse_args()
-    test_corpus = du.clean(args.encrypted)
-    solver = prepare_solver(args)
 
-    top_key, top_fitness = solver.solve(test_corpus, args.n_iters, verbose=args.verbose)
-    if args.verbose:
-        print(f"\r{du.CLEAR}\r")
-    with open(args.encrypted, "rt") as infile, open(args.decryption_file, "wt") as outfile:
-        for line in filter(lambda l: l != "\n", infile.readlines()):
-            decoded = du.export_decrypted_text(top_key, line)
-            print(decoded, file=outfile)
-            #decoded = du.SubstitutionCipher(top_key).decrypt(line.lower())
+    # parse command line arguments
+    args = define_args().parse_args()
+    args.n_iters = 5000
+    args.ngram = 4
+    # clean the test corpus for the algorithm to decode
+    test_corpus, encrypted_vocab = sd.utils.clean(args.encrypted, return_vocab=True)
+    # obtain a du.Solver object for decryption
+
+    # iteratively solve the same problem for 1, 2, 3, and 4-gram language models
+    # each solver builds its solution with the key seeded by its predecessor
+    then = datetime.datetime.now()
+
+    key = sd.solve.SubstitutionSolver.generate_parent() # initial key
+    solver, english_vocab = prepare_solver(args)        # generate the handler that will find solution
+    cipher = sd.core.SubstitutionCipher(key)            # the initial cipher
+    
+    iter_ct = 0
+    # the encrypted texts are known to be correct, English prose. We can use
+    # the corpus text to verify that the decrypted vocabulary is reasonable
+    # by making it function as a dictionary
+    while proportion_english_text(english_vocab, encrypted_vocab, cipher) < 0.95:
+        cipher, fitness = solver.solve(test_corpus, args.n_iters, verbose=args.verbose, seed_parent=cipher.key)
+        iter_ct +=1
+
+    elapsed = (datetime.datetime.now() - then).seconds
+
+    grammar = {True: "attempts", False: "attempt"}  # print with correct gram
+    print(f"\r{CLEAR}\r[>] Decrypted texts in {elapsed} seconds ({iter_ct} {grammar[iter_ct > 1]}).")
+    export_data(args, cipher)
+    print(f"[>] Wrote cipher to {args.cipher_file}, decrypted texts to {args.decryption_file}")
 
 if __name__ == "__main__":
     main()

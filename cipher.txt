@@ -1,0 +1,27 @@
+a -> c
+b -> g
+c -> a
+d -> s
+e -> l
+f -> x
+g -> p
+h -> m
+i -> h
+j -> d
+k -> o
+l -> k
+m -> f
+n -> j
+o -> n
+p -> i
+q -> q
+r -> w
+s -> r
+t -> u
+u -> b
+v -> v
+w -> z
+x -> e
+y -> y
+z -> t
+
