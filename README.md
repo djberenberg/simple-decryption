@@ -4,9 +4,10 @@ Decipher Task Solution
 
 Overview
 --------
-This solution includes two main parts:<br/>
-    1. A command line application for solving a substitution cipher.
-    2. An accompanying library for later scalability and maintenance.
+This solution includes two main parts:
+
+1. A command line application for solving a substitution cipher.
+2. An accompanying library for later scalability and maintenance.
 
 All code was written using Python 3.6 and utilizes the variety of built-in
 modules from the Python standard library.
@@ -55,21 +56,20 @@ As stated earlier, this solution utilizes Python 3.6, implying `python` in this
 case is linked to a 3.6 executable in the user's PATH variable.
 
 The command line application `decipher.py` takes two positional arguments:
-    1. The encrypted "test corpus" as a newline-delimited text file.
-    2. The "training corpus", a volume of prose that is used to train the 
-       n-gram language model and subsequently verify the decrypted message.
+1. The encrypted "test corpus" as a newline-delimited text file.
+2. The "training corpus", a volume of prose that is used to train the 
+n-gram language model and subsequently verify the decrypted message.
 
 Additionally, `decipher.py` supports five other optional arguments one may provide at will.
 Those arguments are:
-    1. --cipher-file, -c FILENAME: the output path to the decryption cipher after
+1. --cipher-file, -c FILENAME: the output path to the decryption cipher after
         the encryption has been cracked. Defaults to "./cipher.txt"
-    2. --decrypted, -d FILENAME: the output path to the decrypted texts, defaulted
-        to "./decrypted.txt"
-    3. --ngram-location, -l LOCATION: the output path to cache ngram files for later usage,
-        defaulted to "./ngrams/". Each ngram is saved as $NGRAM_LOCATION/$N-grams.bin 
-    4. --ngram-width, -g WIDTH: the "n" in "n-gram language model". The window size off of which
-        to base ngram log likelihoods. Defaulted to 4. 
-    5. --verbose, -v: display verbose output, defaulted to False
+2. --decrypted, -d FILENAME: the output path to the decrypted texts, defaulted to "./decrypted.txt"
+3. --ngram-location, -l LOCATION: the output path to cache ngram files for later usage,
+     defaulted to "./ngrams/". Each ngram is saved as $NGRAM_LOCATION/$N-grams.bin 
+4. --ngram-width, -g WIDTH: the "n" in "n-gram language model". The window size off of which
+     to base ngram log likelihoods. Defaulted to 4. 
+5. --verbose, -v: display verbose output, defaulted to False
 
 Usage: As a library
 ------------
@@ -79,19 +79,19 @@ To use it, its customary to follow the suggested idiomatic import statement:
 
 The library is distributed among 3 separate submodules for the purpose of readability and 
 methodical additions in the future:
-    1. `sd.core`: this submodule is central to decryption; it contains a class hierarchy
-        for future decryption ciphers extended from a parent interface called AbstractCipher
-        as well as one cipher implementation called SubstitutionCipher. As described in the
-        docstring, every cipher object expects `encrypt` and `decrypt` methods to be implemented
-        as well as a way to access their "key" (how they translate plaintext to ciphertext),
-        the domain of their mapping and an "alphabet", the range of their encrypted -> decrypted
-        text mapping. This submodule also contains helper functions for pretty printing the 
-        cipher mappings and decrypted cipher text.
-    2. `sd.utils`: this is a submodule containing miscellaneous helper functions for preparing
-        and processing text.
-    3. `sd.solve`: is a submodule that contains Solver objects for cracking ciphers. The only
-        entry into this module is a class called SubstitutionSolver that uses the hill climber
-        algorithm mentioned in the "How does it work?" section to solve a substitution cipher.
+1. `sd.core`: this submodule is central to decryption; it contains a class hierarchy
+    for future decryption ciphers extended from a parent interface called AbstractCipher
+    as well as one cipher implementation called SubstitutionCipher. As described in the
+    docstring, every cipher object expects `encrypt` and `decrypt` methods to be implemented
+    as well as a way to access their "key" (how they translate plaintext to ciphertext),
+    the domain of their mapping and an "alphabet", the range of their encrypted -> decrypted
+    text mapping. This submodule also contains helper functions for pretty printing the 
+    cipher mappings and decrypted cipher text.
+2. `sd.utils`: this is a submodule containing miscellaneous helper functions for preparing
+    and processing text.
+3. `sd.solve`: is a submodule that contains Solver objects for cracking ciphers. The only
+    entry into this module is a class called SubstitutionSolver that uses the hill climber
+    algorithm mentioned in the "How does it work?" section to solve a substitution cipher.
 
 Installation
 ------------
