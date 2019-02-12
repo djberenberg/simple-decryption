@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+
+!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Author: Daniel Berenberg
 
@@ -206,7 +207,7 @@ def main():
     # the corpus text to verify that the decrypted vocabulary is reasonable
     # by making it function as a dictionary
     while proportion_english_text(english_vocab, encrypted_vocab, cipher) < 0.95:
-        cipher, fitness = solver.solve(test_corpus, args.n_iters, verbose=args.verbose, seed_parent=cipher.key)
+        cipher, fitness = solver.solve(test_corpus, args.n_iters, verbose=args.verbose) #seed_parent=cipher.key)
         iter_ct +=1
 
     elapsed = (datetime.datetime.now() - then).seconds

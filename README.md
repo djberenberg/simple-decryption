@@ -47,8 +47,7 @@ The previously mentioned modification comes in after the algorithm has run its c
 Assuming the input corpus contains reliable prose, we take the vocabulary 
 (all unique tokens i.e types) of the final decrypted text and compare it against the 
 vocabulary of the input corpus. If less than 95% of the decrypted vocabulary is found
-in the input corpus, restart the algorithm over again using the final cipher as the 
-"seed key". 
+in the input corpus, restart the algorithm over again using a new "seed key". 
 
 Granted, this modification is susceptible to the notion of a large proportion of OOV texts.
 For example, a high volume of medical or scientific terms may not be found in the 
