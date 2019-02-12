@@ -3,7 +3,11 @@ Decipher Task Solution
 
 Table of Contents
 -----------------
-- [Overview](overview)
+- [Overview](#overview)
+- [How does it work?](#howitworks)
+- [Usage on the command line](#usage-cmd)
+- [Usage as a library](#usage-lib)
+- [Installation](#install)
 
 Overview <a name="overview"/>
 --------
@@ -20,7 +24,7 @@ section of the README for a quick install of the associated code with the comman
 script. In short, assuming the directory `simple_decryption/` is just under `./`,
 please run `pip install --upgrade ./simple_decryption`.  
 
-How does it work?
+How does it work? <a name="howitworks"/>
 --------------------
 The command-line-intended script `decipher.py` assembles the interface provided
 by `simple_decryption` in accomplish the provided task: solve an arbitrary substitution cipher.
@@ -51,7 +55,7 @@ For example, a high volume of medical or scientific terms may not be found in th
 Alice & Wonderland input corpus. In this case, a different corpus may be more advantageous
 such as a medical encyclopedia.  
 
-Usage: At the command line
+Usage: At the command line <a name="usage-cmd"/>
 -------------------
 `python decipher.py <encrypted-text> <training-corpus>` 
 
@@ -75,7 +79,7 @@ Those arguments are:
      to base ngram log likelihoods. Defaulted to 4. 
 5. `--verbose, -v`: display verbose output, defaulted to False
 
-Usage: As a library
+Usage: As a library <a name="usage-lib"/>
 ------------
 The `simple_decryption` library is (hopefully) a scaleable and maintainable piece of software.
 To use it, its customary to follow the suggested idiomatic import statement:
@@ -97,7 +101,7 @@ methodical additions in the future:
     entry into this module is a class called SubstitutionSolver that uses the hill climber
     algorithm mentioned in the "How does it work?" section to solve a substitution cipher.
 
-Installation
+Installation <a name="install"/>
 ------------
 To install all necessary imports for the command line application to work, please 
 change directories so that `simple_decryption/` is just under your working directory
