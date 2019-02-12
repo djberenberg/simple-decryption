@@ -66,7 +66,8 @@ Those arguments are:
         the encryption has been cracked. Defaults to "./cipher.txt"
 2. `--decrypted, -d FILENAME`: the output path to the decrypted texts, defaulted to "./decrypted.txt"
 3. `--ngram-location, -l LOCATION`: the output path to cache ngram files for later usage,
-     defaulted to "./ngrams/". Each ngram is saved as $NGRAM_LOCATION/$N-grams.bin 
+     defaulted to "./ngrams/". Each ngram is a dictionary mapping ngrams to log-likelihoods 
+    pickled at `$NGRAM_LOCATION/$N-grams.bin` 
 4. `--ngram-width, -g WIDTH`: the "n" in "n-gram language model". The window size off of which
      to base ngram log likelihoods. Defaulted to 4. 
 5. `--verbose, -v`: display verbose output, defaulted to False
