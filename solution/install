@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# very simple installation script
+pip install --upgrade ./simple_decryption
