@@ -15,7 +15,6 @@ __all__ = ["SubstitutionCipher","AbstractCipher",
            "export_cipher","export_decrypted_text"]
 
 
-
 #### cipher object hierarchy ####
 class AbstractCipher(object):
     """
@@ -36,11 +35,11 @@ class AbstractCipher(object):
 
     @property
     def key(self):
-        raise NotImplementedError
+        return NotImplemented
 
     @property
     def alphabet(self):
-        raise NotImplementedError
+        return NotImplemented
     
     @classmethod
     def encode(cls,ch,mapping):
@@ -56,6 +55,9 @@ class AbstractCipher(object):
         if ch in mapping:
             return mapping[ch]
         return ch
+
+    def __str__(self):
+        return f"{self.__class__.__name__}(from={self.key}, to={self.alphabet})"
 
 class SubstitutionCipher(AbstractCipher):
     """
@@ -120,8 +122,6 @@ class SubstitutionCipher(AbstractCipher):
         msg = str(msg)
         return "".join(self.encode(ch, self.a2k) for ch in msg)
 
-    def __str__(self):
-        return f"{self.__class__.__name__}(from={self.key}, to={self.alphabet})"
 
 
 # cleanly export of texts/ciphers
@@ -140,8 +140,8 @@ def export_decrypted_text(cipher, text, **kwargs):
     raises:
         :TypeError if cipher is not a child of .core.AbstractCipher
     """
-    #if not isinstance(cipher, AbstractCipher):
-    #    raise TypeError("Expected cipher object")
+    if not isinstance(cipher, AbstractCipher):
+        raise TypeError("Expected cipher object")
 
     final_str = ""
     for ch in text:
@@ -169,8 +169,8 @@ def export_cipher(cipher, **kwargs):
     raises:
         :TypeError if cipher is not a child of .core.AbstractCipher
     """
-    #if not isinstance(cipher, AbstractCipher):
-    #    raise TypeError("Expected cipher object")
+    if not isinstance(cipher, AbstractCipher):
+        raise TypeError("Expected cipher object")
     final_str = ""
     for ch in sorted(cipher.key):
         final_str += f"{ch} -> {cipher.k2a[ch]}\n"

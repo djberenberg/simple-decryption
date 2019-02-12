@@ -105,6 +105,12 @@ def define_args():
                         help="the path to which the app will write the decrytpted text",
                         default="decrypted.txt")
 
+    parser.add_argument("--ngram-width","-g",
+                        dest="ngram",
+                        type=intgt0,
+                        help="The n-gram window size, defaulted to 4",
+                        default=4)
+
     parser.add_argument("--ngram-location","-l",
                         dest="ngram_dir",
                         type=direxists,
@@ -183,7 +189,6 @@ def main():
     # parse command line arguments
     args = define_args().parse_args()
     args.n_iters = 5000
-    args.ngram = 4
     # clean the test corpus for the algorithm to decode
     test_corpus, encrypted_vocab = sd.utils.clean(args.encrypted, return_vocab=True)
     # obtain a du.Solver object for decryption

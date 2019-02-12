@@ -1,160 +1,105 @@
-Decipher
-========
-
-Goal
-----
-
-The goal of this task is to assess a candidate's craftsmanship skills
-as a software engineering.
-
-The goal of this problem is to write a program that decrypts a set of
-short quotations from an English quote book.  They are roughly the
-length of Tweets but not in tweet-speak.  They are proper English
-prose.  
-
-The text file has been encrypted with a simple substitution cipher.
-The cipher is so simple that you can reverse it by hand.  It only
-substitutes letters, so the white space and capitalization remain
-unchanged.  You can find "H" and guess it is the word "I" and find "c"
-and guess it is the word "a", and keep going by hand.
-
-The task is to write a program that automatically derives the cipher
-and recovers the original text.  It must get the complete cipher and
-do so automatically.
-
-But, here's the thing: this task is just hard enough that whatever
-approach you try first, it probably won't get all the letters.  The
-text is small enough that simple things like frequency counts are
-inadequate, so you will have to enhance your algorithm.  In the
-process of improving your algorithm, you will necessarily iterate on
-your code, and that process of working the .py file(s) that you create
-will stress your engineering craftsmanship.  That's the test.  That's
-what we are looking for.
-
-While we do care about algorithmic sophistication and math and speed
-and cleverness, we care much more about *maintainability*, ease of
-reading, ease of understanding someone else's code, and *joy of use*.
-
-The problem forces you to evolve your thinking, and thus your code
-must also evolve.  One measure of engineering craftsmanship is how
-quickly a person can evolve their thinking while still maintaining
-high-quality, readable, *maintainable* code.
+Decipher Task Solution
+======================
 
 
-How long will this take?
-------------------------
+Overview
+--------
+This solution includes two main parts: 
+    1. A command line application for solving a substitution cipher.
+    2. An accompanying library for later scalability and maintenance.
 
-Typically, this takes people between three and eight hours to
-complete.  Some people get really into it and spend many days
-exploring the problem space.  
+All code was written using Python 3.6 and utilizes the variety of built-in
+modules from the Python standard library.
 
-Interestingly, we have detected no correlation between how long
-someone says the spent on it, and the quality of the solution.  By
-"quality", we mean *maintainability*.
+Prior to utilizing the command line application please visit the "Installation"
+section of the README for a quick install of the associated code with the command line
+script. In short, assuming the directory `simple_decryption/` is just under `./`,
+please run `pip install --upgrade ./simple_decryption`.  
 
-We ask ourselves: can I understand the code on first skimming it, and
-do I want to maintain it?  We also ask several detailed questions
-about that code that require full reading, however those are
-secondary.
+How does it work?
+--------------------
+The command-line-intended script `decipher.py` assembles the interface provided
+by `simple_decryption` in accomplish the provided task: solve an arbitrary substitution cipher.
 
-So, in addition to solving the algorithm, please write your own
-README.txt to replace this one, and do whatever else you would do for
-a maintainable piece of software.
+The method chosen to solve such a cipher is a slightly modified version of the 
+hill-climber algorithm,a genetic approach in which the most elite lineage of successively 
+mutated children is followed until the specified number of generations to do so is complete. 
 
+We start with a randomly generated "parent" cipher key and iteratively swap spaces in said
+key until the encrypted texts seem "fit". If the space swap makes a more fit text, keep 
+the new key and do the  process over again. This process is run for 5000 generations. 
 
-Input Data
-----------
-Along with this documentation file, you have been given two data files. 
+In this case, "fitness" is defined by the 4-gram language model log likelihood of the 
+entire, punctuation/spacing removed encrypted text. For each 4-gram from the current 
+cipher-decrypted text, compute its log-likelihood (log base 2 of its 4-gram probability) 
+based on the input corpus, and sum these likelihoods to estimate the likelihood of the 
+decrypted text occurring in English.
 
-"encoded-en.txt" is a set of short messages in English, where each has
-been encrypted using a simple substitution cipher. Such a cipher works
-by replacing all occurrences of a character with a different (randomly
-selected, but consistent) character. The substitution is not case
-sensitive.
+The previously mentioned modification comes in after the algorithm has run its course. 
+Assuming the input corpus contains reliable prose, we take the vocabulary 
+(all unique tokens i.e types) of the final decrypted text and compare it against the 
+vocabulary of the input corpus. If less than 95% of the decrypted vocabulary is found
+in the input corpus, restart the algorithm over again using the final cipher as the 
+"seed key". 
 
-For example:
+Granted, this modification is susceptible to the notion of a large proportion of OOV texts.
+For example, a high volume of medical or scientific terms may not be found in the 
+Alice & Wonderland input corpus. In this case, a different corpus may be more advantageous
+such as a medical encyclopedia.  
 
-Original message: "Hello world."
-Encrypted message: "Lkccz mzfca."
+Usage: At the command line
+-------------------
+`python decipher.py <encrypted-text> <training-corpus>` 
 
-Cipher:
-d -> a
-e -> k
-h -> l
-l -> c
-o -> z
-r -> f
-w -> m
+As stated earlier, this solution utilizes Python 3.6, implying `python` in this
+case is linked to a 3.6 executable in the user's PATH variable.
 
-For this problem white space and punctuation are not substituted.
+The command line application `decipher.py` takes two positional arguments:
+    1. The encrypted "test corpus" as a newline-delimited text file.
+    2. The "training corpus", a volume of prose that is used to train the 
+       n-gram language model and subsequently verify the decrypted message.
 
-"corpus-en.txt" is a corpus of English texts from gutenberg.org
-consisting of the contents of a number of books.  Please do not use
-external data sources.  If you want character frequencies etc, then
-please use corpus-en.txt.
+Additionally, `decipher.py` supports five other optional arguments one may provide at will.
+Those arguments are:
+    1. --cipher-file, -c FILENAME: the output path to the decryption cipher after
+        the encryption has been cracked. Defaults to "./cipher.txt"
+    2. --decrypted, -d FILENAME: the output path to the decrypted texts, defaulted
+        to "./decrypted.txt"
+    3. --ngram-location, -l LOCATION: the output path to cache ngram files for later usage,
+        defaulted to "./ngrams/". Each ngram is saved as $NGRAM_LOCATION/$N-grams.bin 
+    4. --ngram-width, -g WIDTH: the "n" in "n-gram language model". The window size off of which
+        to base ngram log likelihoods. Defaulted to 4. 
+    5. --verbose, -v: display verbose output, defaulted to False
 
-
-Your Program
+Usage: As a library
 ------------
-We prefer that you code this in python.  If you would like to submit
-solutions in other programming languages, we will certainly read them.
-Language nimbleness is an important skill.  If non-standard libraries
-are required to run the solution you need to provide them (ideally
-none).
+The `simple_decryption` library is (hopefully) a scaleable and maintainable piece of software.
+To use it, its customary to follow the suggested idiomatic import statement:
+    `import simple_decryption as sd`
 
-Your program should be runnable from the command line and output at
-least two other separate files:
+The library is distributed among 3 separate submodules for the purpose of readability and 
+methodical additions in the future:
+    1. `sd.core`: this submodule is central to decryption; it contains a class hierarchy
+        for future decryption ciphers extended from a parent interface called AbstractCipher
+        as well as one cipher implementation called SubstitutionCipher. As described in the
+        docstring, every cipher object expects `encrypt` and `decrypt` methods to be implemented
+        as well as a way to access their "key" (how they translate plaintext to ciphertext),
+        the domain of their mapping and an "alphabet", the range of their encrypted -> decrypted
+        text mapping. This submodule also contains helper functions for pretty printing the 
+        cipher mappings and decrypted cipher text.
+    2. `sd.utils`: this is a submodule containing miscellaneous helper functions for preparing
+        and processing text.
+    3. `sd.solve`: is a submodule that contains Solver objects for cracking ciphers. The only
+        entry into this module is a class called SubstitutionSolver that uses the hill climber
+        algorithm mentioned in the "How does it work?" section to solve a substitution cipher.
 
-(1) The decryption cipher (i.e. the inverse mapping of encoded
-character back to original), in a single text file with the format:
+Installation
+------------
+To install all necessary imports for the command line application to work, please 
+change directories so that `simple_decryption/` is just under your working directory
+and run:
+    `pip install --upgrade ./simple_decryption`
 
-<encrypted> -> <decrypted>
-...
-
-for each character. No header row, thus there should be 26 rows (one
-for each English letter).
-
-e.g.
-a -> z
-b -> y
-c -> x
-...
-z -> a
-
-(2) The original texts decrypted based on this decryption cipher.
-This should be in a single text file, following the same formatting as
-the encrypted messages provided.
-
-
-You should submit at the conclusion of the exercise:
-
-- All code written
-
-- Example output files as specified above
-
-- Any supplementary files (e.g. tests, data)
-
-- A brief write-up explaining your approach, how well it worked, what
-  further avenues you might explore given time, along with any
-  necessary instructions on how to run the code. Specify the language
-  version if important to running the solution.
-
-
-
-Important Notes
----------------
-
-In addition to evaluating the simplicity and cleverness of your
-technical approach, we also give marks for ease of use, engineering
-hygiene, craftmanship & style.
-
-Correct solutions get the reverse cipher without fail.  That is,
-programs should *not* require repeated manual operation to eventually
-get a valid reverse cipher.
-
-Your program should be sufficiently generalized that it can be run on
-*other* input files, or even incorporated into a larger system.  We
-want to see how you organize the interface to your algorithm.
-
-Pythonic style counts.  Use the python standard library and tools.
+This will install the library into your system's `site_packages` directory so that Python
+recognizes it as a package it is able to import. 
 
