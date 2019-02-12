@@ -1,8 +1,11 @@
 Decipher Task Solution
 ======================
 
+Table of Contents
+-----------------
+- [Overview](overview)
 
-Overview
+Overview <a name="overview"/>
 --------
 This solution includes two main parts:
 
