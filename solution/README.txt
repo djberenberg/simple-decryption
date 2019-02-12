@@ -48,7 +48,7 @@ Alice & Wonderland input corpus. In this case, a different corpus may be more ad
 such as a medical encyclopedia.  
 
 Usage: At the command line
--------------------
+--------------------------
 `python decipher.py <encrypted-text> <training-corpus>` 
 
 As stated earlier, this solution utilizes Python 3.6, implying `python` in this
@@ -72,7 +72,7 @@ Those arguments are:
 5. `--verbose, -v`: display verbose output, defaulted to False
 
 Usage: As a library
-------------
+-------------------
 The `simple_decryption` library is (hopefully) a scaleable and maintainable piece of software.
 To use it, its customary to follow the suggested idiomatic import statement:
     `import simple_decryption as sd`
