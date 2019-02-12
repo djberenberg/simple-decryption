@@ -2,4 +2,5 @@
 *.swo
 corpus-en.txt
 ngrams/
+*.tar.gz
 __pycache__
